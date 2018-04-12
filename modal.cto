@@ -1,0 +1,68 @@
+namespace org.acme.loan
+
+participant BorrowerRequest identified by requestId {
+ 	o String requestId
+    o Double amountRequested
+	o Double amountFulfilled
+    o String loanRequirementPurpose
+    o Integer durationOfLoanInMonths
+    o Boolean isDone default = false
+  	--> Borrower borrower
+}
+
+participant Borrower extends User{
+	o Integer total
+  	o Integer success
+  	o Integer fail
+}
+  
+participant User identified by userId {
+  	o String userId
+	o String firstname
+  	o String lastName
+  	o String email
+  	o String aadhar
+  	o Boolean isLender default = false
+}
+
+participant Lender extends User {
+	o Double accountBalance
+}
+
+asset Loan identified by loanId {
+	o String loanId
+	--> BorrowerRequest borrowerRequest
+	--> Lender lender
+	o DateTime startDate
+	o DateTime endDate
+	o Integer amount
+	o LoanStatus status
+}
+
+enum LoanStatus {
+  o CREDITED
+  o REPAID
+  o FAILED
+}
+
+transaction CreditLoan {
+	--> Loan loan
+    --> BorrowerRequest borrowerRequest
+    --> Lender lender
+	o Double amount
+}
+
+transaction RepayLoan {
+	--> Loan loan
+	o Double amount
+}
+
+transaction FailedLoan {
+	--> Loan loan
+}
+
+transaction SetupDemo {
+}
+
+transaction addNewLender{
+}
