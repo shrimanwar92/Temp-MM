@@ -6,7 +6,7 @@ participant BorrowerRequest identified by requestId {
   o Double amountFulfilled
     o Double amountRepaid
     o String loanRequirementPurpose
-    o Integer durationOfLoanInMonths
+    o Integer durationOfLoanInMonths range = [1,60]
     o Boolean isDone default = false
     o Boolean isRepaid default = false
     --> Borrower borrower

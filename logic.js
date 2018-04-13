@@ -24,7 +24,7 @@
     }
     
     let date = new Date();
-    tx.loan.endDate = new Date(date.setMonth(date.getMonth() + 3));
+    tx.loan.endDate = new Date(date.setMonth(date.getMonth() + tx.loan.borrowerRequest.durationOfLoanInMonths));
    
     let lenderRegistry = await getParticipantRegistry('org.acme.loan.Lender');
   await lenderRegistry.update(tx.loan.lender);
@@ -50,8 +50,13 @@ async function RepayLoan(tx) {
     }
     tx.loan.lender.accountBalance += tx.amount;
     tx.borrowerRequest.borrower.accountBalance -= tx.amount; 
+    tx.loan.borrowerRequest.amountRepaid += tx.amount;
     tx.loan.status = "REPAID";
     tx.loan.amount = tx.amount;
+  
+  if(tx.loan.borrowerRequest.amountFulfilled == tx.loan.borrowerRequest.amountRepaid) {
+      tx.loan.borrowerRequest.isRepaid = true;
+    }
   
     let lenderRegistry = await getParticipantRegistry('org.acme.loan.Lender');
   await lenderRegistry.update(tx.loan.lender);
