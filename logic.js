@@ -5,6 +5,9 @@
  */
 
  async function CreditLoan(tx) {   
+ 	if(tx.loan.borrowerRequest.isDone) {
+ 		throw new Error("Your loan is already fulfilled."); 
+ 	}
     if(tx.loan.lender.accountBalance < tx.amount) {
       throw new Error("Insufficient Balance in your account"); 
     }
@@ -45,6 +48,9 @@
  * @transaction
  */
 async function RepayLoan(tx) {
+	if(tx.borrowerRequest.isRepaid) {
+      throw new Error("You have already repaid the loan."); 
+    }
   if(tx.borrowerRequest.borrower.accountBalance < tx.amount) {
       throw new Error("Insufficient Balance in your account"); 
     }
