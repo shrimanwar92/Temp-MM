@@ -27,6 +27,11 @@ abstract participant User identified by userId {
     o String aadhar
     o Boolean isLender default = false
 }
+  
+concept LenderDetails {
+  --> Lender lender
+    o Double amount
+}
 
 participant Lender extends User {
   o Double accountBalance
@@ -35,17 +40,9 @@ participant Lender extends User {
 asset Loan identified by loanId {
   o String loanId
   --> BorrowerRequest borrowerRequest
-  --> Lender lender
+  o LenderDetails[] lenders
   o DateTime startDate
   o DateTime endDate
-  o Integer amount
-  o LoanStatus status
-}
-
-enum LoanStatus {
-  o CREDITED
-  o REPAID
-  o FAILED
 }
 
 transaction CreditLoan {
