@@ -2,9 +2,9 @@ namespace org.acme.loan
 
 participant BorrowerRequest identified by requestId {
   o String requestId
-    o Double amountRequested
-  o Double amountFulfilled
-    o Double amountRepaid
+    o Double amountRequested default = 0.0
+  o Double amountFulfilled default = 0.0
+    o Double amountRepaid default = 0.0
     o String loanRequirementPurpose
     o Integer durationOfLoanInMonths range = [1,60]
     o Boolean isDone default = false
@@ -13,7 +13,7 @@ participant BorrowerRequest identified by requestId {
 }
 
 participant Borrower extends User{
-    o Double accountBalance
+    o Double accountBalance default = 0.0
   o Integer total
     o Integer success
     o Integer fail
@@ -30,11 +30,12 @@ abstract participant User identified by userId {
   
 concept LenderDetails {
   --> Lender lender
-    o Double amount
+    o Double amount default = 0.0
+    o Double repaid default = 0.0
 }
 
 participant Lender extends User {
-  o Double accountBalance
+  o Double accountBalance default = 0.0
 }
 
 asset Loan identified by loanId {
@@ -59,12 +60,9 @@ transaction RepayLoan {
   o Double amount
 }
 
-transaction FailedLoan {
-  --> Loan loan
-}
-
-transaction SetupDemo {
-}
-
-transaction addNewLender{
+transaction RequestLoan {
+  o Double amountRequested
+  o String loanRequirementPurpose
+  o Integer durationOfLoanInMonths
+  --> Borrower borrower
 }
