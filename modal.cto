@@ -14,9 +14,9 @@ participant BorrowerRequest identified by requestId {
 
 participant Borrower extends User{
     o Double accountBalance default = 0.0
-  o Integer total
-    o Integer success
-    o Integer fail
+  o Integer total default = 0
+    o Integer success default = 0
+    o Integer fail default = 0
 }
   
 abstract participant User identified by userId {
@@ -44,6 +44,13 @@ asset Loan identified by loanId {
   o LenderDetails[] lenders
   o DateTime startDate
   o DateTime endDate
+  o Interest interest
+}
+
+enum Interest {
+  o NORMAL
+  o MEDIUM_RISK
+  o HIGH_RISK
 }
 
 transaction CreditLoan {

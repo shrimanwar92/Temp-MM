@@ -10,6 +10,9 @@ async function CreditLoan(tx) {
     if (tx.borrowerRequest.isDone) {
         throw new Error("Your loan is already fulfilled.");
     }
+    if(tx.amount == 0 || (tx.amount % 500) != 0) {
+        throw new Error("Please enter amount in multiples of 500. For ex. 500, 1000 and so on.")
+    }
     if (tx.lender.accountBalance < tx.amount) {
         throw new Error("Insufficient Balance in your account");
     }
@@ -63,6 +66,9 @@ async function RepayLoan(tx) {
     if (tx.borrowerRequest.isRepaid) {
         throw new Error("You have already repaid the loan.");
     }
+    if(tx.amount == 0 || (tx.amount % 500) != 0) {
+        throw new Error("Please enter amount in multiples of 500. For ex. 500, 1000 and so on.")
+    }
     if (tx.borrowerRequest.borrower.accountBalance < tx.amount) {
         throw new Error("Insufficient Balance in your account");
     }
@@ -76,6 +82,15 @@ async function RepayLoan(tx) {
 
     if (tx.borrowerRequest.amountFulfilled == tx.borrowerRequest.amountRepaid) {
         tx.borrowerRequest.isRepaid = true;
+        
+        let current = new Date().getTime();
+        let end = new Date(tx.loan.endDate).getTime();
+        if(current > end) {
+            tx.borrowerRequest.borrower.fail += 1;
+        }
+        if(current == end || current < end) {
+            tx.borrowerRequest.borrower.success += 1; 
+        }
     }
 
     let lenderRegistry = await getParticipantRegistry('org.acme.loan.Lender');
@@ -111,8 +126,11 @@ async function RequestLoan(request) {
     borrowerRequest.durationOfLoanInMonths = request.durationOfLoanInMonths;
     borrowerRequest.borrower = request.borrower;
     await borrowerRequestRegistry.add(borrowerRequest);
+
+    // calculate interest
+
   
-      // create a loan resource
+    // create a loan resource
     let currentDate = new Date();
     let loanId = `loan-${Math.floor(Math.random()*90000) + 10000}`;
     const loan = factory.newResource(namespace, 'Loan', loanId);
