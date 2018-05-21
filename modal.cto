@@ -44,13 +44,7 @@ asset Loan identified by loanId {
   o LenderDetails[] lenders
   o DateTime startDate
   o DateTime endDate
-  o Interest interest
-}
-
-enum Interest {
-  o NORMAL
-  o MEDIUM_RISK
-  o HIGH_RISK
+  o Double interest
 }
 
 transaction CreditLoan {

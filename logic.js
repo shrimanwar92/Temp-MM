@@ -10,7 +10,7 @@ async function CreditLoan(tx) {
     if (tx.borrowerRequest.isDone) {
         throw new Error("Your loan is already fulfilled.");
     }
-    if(tx.amount == 0 || (tx.amount % 500) != 0) {
+    if(tx.amount == 0 || (tx.amount % 100) != 0) {
         throw new Error("Please enter amount in multiples of 500. For ex. 500, 1000 and so on.")
     }
     if (tx.lender.accountBalance < tx.amount) {
@@ -27,12 +27,12 @@ async function CreditLoan(tx) {
     let currentLender = tx.loan.lenders.filter(lndr => lndr.lender.userId == tx.lender.userId);
 
     if (currentLender.length > 0) {
-        currentLender[0].amount += tx.amount;;
+        currentLender[0].amount += tx.amount + ( tx.amount/tx.loan.interest );
     } else {
         // create a concept resource to add to lenders array if lender is not present
         const details = getFactory().newConcept('org.acme.loan', 'LenderDetails');
         details.lender = tx.lender;
-        details.amount = tx.amount;
+        details.amount = tx.amount + ( tx.amount/tx.loan.interest );
         tx.loan.lenders.push(details);
     }
 
@@ -66,7 +66,7 @@ async function RepayLoan(tx) {
     if (tx.borrowerRequest.isRepaid) {
         throw new Error("You have already repaid the loan.");
     }
-    if(tx.amount == 0 || (tx.amount % 500) != 0) {
+    if(tx.amount == 0 || (tx.amount % 100) != 0) {
         throw new Error("Please enter amount in multiples of 500. For ex. 500, 1000 and so on.")
     }
     if (tx.borrowerRequest.borrower.accountBalance < tx.amount) {
@@ -79,8 +79,9 @@ async function RepayLoan(tx) {
     // check if lender is already present
     let currentLender = tx.loan.lenders.filter(lndr => lndr.lender.userId == tx.lender.userId);
     currentLender[0].repaid += tx.amount;
-
-    if (tx.borrowerRequest.amountFulfilled == tx.borrowerRequest.amountRepaid) {
+  
+    let amtWithInterest = tx.borrowerRequest.amountFulfilled + (tx.borrowerRequest.amountFulfilled / tx.loan.interest);
+    if ( amtWithInterest == tx.borrowerRequest.amountRepaid ) {
         tx.borrowerRequest.isRepaid = true;
         
         let current = new Date().getTime();
@@ -128,6 +129,32 @@ async function RequestLoan(request) {
     await borrowerRequestRegistry.add(borrowerRequest);
 
     // calculate interest
+    let interest;
+    if(borrowerRequest.borrower.total == 0) {
+        interest = 10;
+    } else {
+        let reputation = (borrowerRequest.borrower.success / borrowerRequest.borrower.total) * 100;
+        
+        // good reputation
+        if(reputation > 70) {
+            interest = 10;
+        }
+
+        // mediocre reputation
+        if(reputation > 50 && reputation <= 70) {
+            interest = 15;
+        }
+
+        // below average
+        if(reputation > 25 && reputation <= 50) {
+            interest = 25;
+        }
+
+        // risky
+        if(reputation > 0 && reputation <= 25) {
+            interest = 35;
+        }
+    }
 
   
     // create a loan resource
@@ -138,5 +165,6 @@ async function RequestLoan(request) {
     loan.lenders = [];
     loan.startDate = currentDate;
     loan.endDate = currentDate;
+    loan.interest = interest;
     await loanAssetRegistry.add(loan);
 }
