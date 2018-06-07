@@ -23,10 +23,11 @@ async function CreditLoan(tx) {
     }
     tx.lender.accountBalance -= tx.amount;
     tx.borrowerRequest.amountFulfilled += tx.amount;
+    tx.borrowerRequest.interestAmount = tx.amount * (tx.loan.interest/100) * (tx.borrowerRequest.durationOfLoanInMonths/12);
 
     // check if lender is already present
     let currentLender = tx.loan.lenders.filter(lndr => lndr.lender.userId == tx.lender.userId);
-    let totalAmtInt = Math.ceil(tx.amount + ( tx.amount * (tx.loan.interest/100) * (tx.borrowerRequest.durationOfLoanInMonths/12) ));
+    let totalAmtInt = Math.ceil(tx.amount + tx.borrowerRequest.interestAmount);
 
     if (currentLender.length > 0) {
         currentLender[0].amount += totalAmtInt;
@@ -84,7 +85,7 @@ async function RepayLoan(tx) {
 
     let totalRepaid = tx.loan.lenders.reduce((a, b) => a.repaid + b.repaid);
   
-    let amtWithInterest = tx.borrowerRequest.amountFulfilled + (tx.borrowerRequest.amountFulfilled * (tx.loan.interest / 100) * (tx.borrowerRequest.durationOfLoanInMonths/12));
+    let amtWithInterest = tx.borrowerRequest.amountFulfilled + tx.borrowerRequest.interestAmount;
     if ( amtWithInterest <= totalRepaid ) {
         tx.borrowerRequest.isRepaid = true;
         
