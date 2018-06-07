@@ -26,14 +26,15 @@ async function CreditLoan(tx) {
 
     // check if lender is already present
     let currentLender = tx.loan.lenders.filter(lndr => lndr.lender.userId == tx.lender.userId);
+    let totalAmtInt = Math.ceil(tx.amount + ( tx.amount * (tx.loan.interest/100) * (tx.borrowerRequest.durationOfLoanInMonths/12) ));
 
     if (currentLender.length > 0) {
-        currentLender[0].amount += Math.ceil(tx.amount + ( tx.amount/tx.loan.interest ));
+        currentLender[0].amount += totalAmtInt;
     } else {
         // create a concept resource to add to lenders array if lender is not present
         const details = getFactory().newConcept('org.acme.loan', 'LenderDetails');
         details.lender = tx.lender;
-        details.amount = Math.ceil(tx.amount + ( tx.amount/tx.loan.interest ));
+        details.amount = totalAmtInt;
         tx.loan.lenders.push(details);
     }
 
@@ -80,9 +81,11 @@ async function RepayLoan(tx) {
     // check if lender is already present
     let currentLender = tx.loan.lenders.filter(lndr => lndr.lender.userId == tx.lender.userId);
     currentLender[0].repaid += tx.amount;
+
+    let totalRepaid = tx.loan.lenders.reduce((a, b) => a.repaid + b.repaid);
   
-    let amtWithInterest = tx.borrowerRequest.amountFulfilled + (tx.borrowerRequest.amountFulfilled * (tx.loan.interest / 100) * tx.borrowerRequest.durationOfLoanInMonths);
-    if ( amtWithInterest <= tx.borrowerRequest.amountRepaid ) {
+    let amtWithInterest = tx.borrowerRequest.amountFulfilled + (tx.borrowerRequest.amountFulfilled * (tx.loan.interest / 100) * (tx.borrowerRequest.durationOfLoanInMonths/12));
+    if ( amtWithInterest <= totalRepaid ) {
         tx.borrowerRequest.isRepaid = true;
         
         let current = new Date().getTime();
