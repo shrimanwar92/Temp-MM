@@ -11,8 +11,8 @@ async function CreditLoan(tx) {
     if (tx.borrowerRequest.isDone) {
         throw new Error("Your loan is already fulfilled.");
     }
-    if(tx.amount == 0 || (tx.amount % 100) != 0) {
-        throw new Error("Please enter amount in multiples of 500. For ex. 500, 1000 and so on.")
+    if(tx.amount == 0) {
+        throw new Error("Please enter a valid amount.")
     }
     if (tx.lender.accountBalance < tx.amount) {
         throw new Error("Insufficient Balance in your account");
@@ -28,16 +28,16 @@ async function CreditLoan(tx) {
     let currentLender = tx.loan.lenders.filter(lndr => lndr.lender.userId == tx.lender.userId);
 
     if (currentLender.length > 0) {
-        currentLender[0].amount += tx.amount + ( tx.amount/tx.loan.interest );
+        currentLender[0].amount += Math.ceil(tx.amount + ( tx.amount/tx.loan.interest ));
     } else {
         // create a concept resource to add to lenders array if lender is not present
         const details = getFactory().newConcept('org.acme.loan', 'LenderDetails');
         details.lender = tx.lender;
-        details.amount = tx.amount + ( tx.amount/tx.loan.interest );
+        details.amount = Math.ceil(tx.amount + ( tx.amount/tx.loan.interest ));
         tx.loan.lenders.push(details);
     }
 
-    if (tx.borrowerRequest.amountFulfilled == tx.borrowerRequest.amountRequested) {
+    if (tx.borrowerRequest.amountFulfilled >= tx.borrowerRequest.amountRequested) {
         tx.borrowerRequest.isDone = true;
         tx.borrowerRequest.borrower.accountBalance = tx.loan.borrowerRequest.amountFulfilled;
         tx.borrowerRequest.borrower.total += 1;
@@ -67,8 +67,8 @@ async function RepayLoan(tx) {
     if (tx.borrowerRequest.isRepaid) {
         throw new Error("You have already repaid the loan.");
     }
-    if(tx.amount == 0 || (tx.amount % 100) != 0) {
-        throw new Error("Please enter amount in multiples of 500. For ex. 500, 1000 and so on.")
+    if(tx.amount == 0) {
+        throw new Error("Please enter a valid amount.")
     }
     if (tx.borrowerRequest.borrower.accountBalance < tx.amount) {
         throw new Error("Insufficient Balance in your account");
@@ -82,7 +82,7 @@ async function RepayLoan(tx) {
     currentLender[0].repaid += tx.amount;
   
     let amtWithInterest = tx.borrowerRequest.amountFulfilled + (tx.borrowerRequest.amountFulfilled / tx.loan.interest);
-    if ( amtWithInterest == tx.borrowerRequest.amountRepaid ) {
+    if ( amtWithInterest <= tx.borrowerRequest.amountRepaid ) {
         tx.borrowerRequest.isRepaid = true;
         
         let current = new Date().getTime();
@@ -90,8 +90,11 @@ async function RepayLoan(tx) {
         if(current > end) {
             tx.borrowerRequest.borrower.fail += 1;
         }
-        if(current == end || current < end) {
+        if(current <= end) {
             tx.borrowerRequest.borrower.success += 1; 
+
+            // reward points based on how early(in days) the borrower has repaid the loan
+            tx.borrowerRequest.borrower.rewardPoints = Math.ceil((end - current) / (1000 * 3600 * 24));
         }
     }
 
@@ -148,33 +151,35 @@ async function RequestLoan(request) {
         interestOnMonths = DEFAULT_MINIMUM_INTEREST + 6;
     }
 
+    // calculate interest based on reputation
     let interest;
-    if(borrowerRequest.borrower.total == 0) {
-        interest = interestOnMonths;
-    } else {
-        let reputation = (borrowerRequest.borrower.success / borrowerRequest.borrower.total) * 100;
-        
-        // good reputation
-        if(reputation > 70) {
-            interest = interestOnMonths + 2;
-        }
-
-        // mediocre reputation
-        if(reputation > 50 && reputation <= 70) {
-            interest = interestOnMonths + 5;
-        }
-
-        // below average
-        if(reputation > 25 && reputation <= 50) {
-            interest = interestOnMonths + 9;
-        }
-
-        // risky
-        if(reputation > 0 && reputation <= 25) {
-            interest = interestOnMonths + 14;
-        }
+    let reputation = (borrowerRequest.borrower.success / borrowerRequest.borrower.total) * 100;
+    
+    // good reputation
+    if(reputation > 70 || borrowerRequest.borrower.total == 0) {
+        interest = interestOnMonths + 2;
     }
 
+    // mediocre reputation
+    if(reputation > 50 && reputation <= 70) {
+        interest = interestOnMonths + 5;
+    }
+
+    // below average
+    if(reputation > 25 && reputation <= 50) {
+        interest = interestOnMonths + 9;
+    }
+
+    // risky
+    if(reputation > 0 && reputation <= 25) {
+        interest = interestOnMonths + 14;
+    }
+
+    // Recalculate interest based on reward points generated from previous loans
+    if(borrowerRequest.borrower.rewardPoints > 0) {
+        interest = interest - (borrowerRequest.borrower.rewardPoints/100);
+        borrowerRequest.borrower.rewardPoints = 0;
+    }
   
     // create a loan resource
     let currentDate = new Date();
