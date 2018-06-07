@@ -81,7 +81,7 @@ async function RepayLoan(tx) {
     let currentLender = tx.loan.lenders.filter(lndr => lndr.lender.userId == tx.lender.userId);
     currentLender[0].repaid += tx.amount;
   
-    let amtWithInterest = tx.borrowerRequest.amountFulfilled + (tx.borrowerRequest.amountFulfilled / tx.loan.interest);
+    let amtWithInterest = tx.borrowerRequest.amountFulfilled + (tx.borrowerRequest.amountFulfilled * (tx.loan.interest / 100) * tx.borrowerRequest.durationOfLoanInMonths);
     if ( amtWithInterest <= tx.borrowerRequest.amountRepaid ) {
         tx.borrowerRequest.isRepaid = true;
         
