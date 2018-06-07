@@ -17,7 +17,7 @@ participant Borrower extends User{
   o Integer total default = 0
     o Integer success default = 0
     o Integer fail default = 0
-    o Interger rewardPoints default = 0
+    o Double rewardPoints default = 0.0
 }
   
 abstract participant User identified by userId {
