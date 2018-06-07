@@ -1,5 +1,6 @@
 var factory = getFactory();
 var namespace = 'org.acme.loan';
+var DEFAULT_MINIMUM_INTEREST = 8;
 /**
  * Published transaction processor function.
  * @param {org.acme.loan.CreditLoan} tx The credited loan transaction instance.
@@ -128,31 +129,49 @@ async function RequestLoan(request) {
     borrowerRequest.borrower = request.borrower;
     await borrowerRequestRegistry.add(borrowerRequest);
 
-    // calculate interest
+    // calculate interest based on loan duration in months and borrower reputation
+    let interestOnMonths;
+    let loanDurationInMonths = borrowerRequest.durationOfLoanInMonths;
+    if(loanDurationInMonths <= 3) {
+        interestOnMonths = DEFAULT_MINIMUM_INTEREST + 2;
+    }
+
+    if(loanDurationInMonths > 3 && loanDurationInMonths <= 6) {
+        interestOnMonths = DEFAULT_MINIMUM_INTEREST + 3;
+    }
+
+    if(loanDurationInMonths > 6 && loanDurationInMonths <= 12) {
+        interestOnMonths = DEFAULT_MINIMUM_INTEREST + 5;
+    }
+
+    if(loanDurationInMonths > 12) {
+        interestOnMonths = DEFAULT_MINIMUM_INTEREST + 6;
+    }
+
     let interest;
     if(borrowerRequest.borrower.total == 0) {
-        interest = 10;
+        interest = interestOnMonths;
     } else {
         let reputation = (borrowerRequest.borrower.success / borrowerRequest.borrower.total) * 100;
         
         // good reputation
         if(reputation > 70) {
-            interest = 10;
+            interest = interestOnMonths + 2;
         }
 
         // mediocre reputation
         if(reputation > 50 && reputation <= 70) {
-            interest = 15;
+            interest = interestOnMonths + 5;
         }
 
         // below average
         if(reputation > 25 && reputation <= 50) {
-            interest = 25;
+            interest = interestOnMonths + 9;
         }
 
         // risky
         if(reputation > 0 && reputation <= 25) {
-            interest = 35;
+            interest = interestOnMonths + 14;
         }
     }
 
