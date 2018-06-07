@@ -23,11 +23,11 @@ async function CreditLoan(tx) {
     }
     tx.lender.accountBalance -= tx.amount;
     tx.borrowerRequest.amountFulfilled += tx.amount;
-    tx.borrowerRequest.interestAmount += tx.amount * (tx.loan.interest/100) * (tx.borrowerRequest.durationOfLoanInMonths/12);
+    tx.borrowerRequest.interestAmount += Math.ceil(tx.amount * (tx.loan.interest/100) * (tx.borrowerRequest.durationOfLoanInMonths/12));
 
     // check if lender is already present
     let currentLender = tx.loan.lenders.filter(lndr => lndr.lender.userId == tx.lender.userId);
-    let totalAmtInt = Math.ceil(tx.amount + tx.borrowerRequest.interestAmount);
+    let totalAmtInt = Math.ceil(tx.amount + ( tx.amount * (tx.loan.interest/100) * (tx.borrowerRequest.durationOfLoanInMonths/12) ));
 
     if (currentLender.length > 0) {
         currentLender[0].amount += totalAmtInt;
