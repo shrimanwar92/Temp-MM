@@ -82,11 +82,9 @@ async function RepayLoan(tx) {
     // check if lender is already present
     let currentLender = tx.loan.lenders.filter(lndr => lndr.lender.userId == tx.lender.userId);
     currentLender[0].repaid += tx.amount;
-
-    let totalRepaid = tx.loan.lenders.reduce((a, b) => a.repaid + b.repaid);
   
     let amtWithInterest = tx.borrowerRequest.amountFulfilled + tx.borrowerRequest.interestAmount;
-    if ( amtWithInterest <= totalRepaid ) {
+    if ( tx.borrowerRequest.amountRepaid >= amtWithInterest ) {
         tx.borrowerRequest.isRepaid = true;
         
         let current = new Date().getTime();
