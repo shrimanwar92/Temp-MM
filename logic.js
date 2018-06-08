@@ -41,7 +41,7 @@ async function CreditLoan(tx) {
 
     if (tx.borrowerRequest.amountFulfilled >= tx.borrowerRequest.amountRequested) {
         tx.borrowerRequest.isDone = true;
-        tx.borrowerRequest.borrower.accountBalance = tx.loan.borrowerRequest.amountFulfilled;
+        tx.borrowerRequest.borrower.accountBalance += tx.loan.borrowerRequest.amountFulfilled;
         tx.borrowerRequest.borrower.total += 1;
     }
 
